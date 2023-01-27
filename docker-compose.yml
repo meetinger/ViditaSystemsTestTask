@@ -1,0 +1,54 @@
+version: "3.3"
+services:
+  postgres_db:
+    container_name: vd_postgres_container
+    image: postgres:15.1
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: "pgdata"
+    volumes:
+      - ./postgres:/postgres
+    ports:
+      - "${DB_PORT}:5432"
+#    expose:
+#      - "5432"
+    networks:
+      - postgres
+
+  postgres_test_db:
+    container_name: vd_postgres_test_container
+    image: postgres:15.1
+    environment:
+      POSTGRES_DB: ${DB_TEST_NAME}
+      POSTGRES_USER: ${DB_TEST_USER}
+      POSTGRES_PASSWORD: ${DB_TEST_PASSWORD}
+      PGDATA: "pgdata_test"
+    volumes:
+      - ./postgres:/postgres
+    ports:
+      - "${DB_TEST_PORT}:5432"
+#    expose:
+#      - "5432"
+    networks:
+      - postgres
+
+  pgadmin:
+    container_name: wb_pgadmin_container
+    image: dpage/pgadmin4:6.17
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PG_ADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PG_ADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - ./pgadmin:/pgadmin
+    ports:
+      - "${PG_ADMIN_PORT}:80"
+    restart: unless-stopped
+    networks:
+      - postgres
+
+networks:
+  postgres:
+      driver: bridge
