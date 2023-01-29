@@ -1,8 +1,6 @@
-import datetime
-import enum
-import locale
 import calendar
-from typing import Coroutine, Callable
+import datetime
+import locale
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import CallbackContext, ConversationHandler
@@ -10,18 +8,19 @@ from telegram.ext import CallbackContext, ConversationHandler
 from core.utils.misc import stringify, offset_date
 
 
-class CalendarStates(enum.IntEnum):
-    CONTINUE = enum.auto()
+class CalendarStates:
+    DATE_SELECTION_AWAIT = 1
     # END = enum.auto
 
 
-class CalendarCallbackTypes(enum.IntEnum):
-    IGNORE = enum.auto()
-    SELECT_DATE = enum.auto()
-    PREV_MONTH = enum.auto()
-    NEXT_MONTH = enum.auto()
-    NEXT_YEAR = enum.auto()
-    PREV_YEAR = enum.auto()
+class CalendarCallbackTypes:
+    IGNORE = 1
+    SELECT_DATE = 2
+    PREV_MONTH = 3
+    NEXT_MONTH = 4
+    NEXT_YEAR = 5
+    PREV_YEAR = 6
+
 
 # CALENDAR_CALLBACK
 
@@ -29,15 +28,16 @@ def get_last_day_of_month(year: int, month: int) -> int:
     return calendar.monthrange(year=year, month=month)[1]
 
 
-def encode_callback_data(callback_type: CalendarCallbackTypes, year: int = None, month: int = None, day: int = None, idx: int = None) -> str:
-    encoded = ';'.join([str(callback_type.value)] + [stringify(year), stringify(month), stringify(day), stringify(idx)])
+def encode_callback_data(callback_type: int, year: int = None, month: int = None, day: int = None,
+                         idx: int = None) -> str:
+    encoded = ';'.join([str(callback_type)] + [stringify(year), stringify(month), stringify(day), stringify(idx)])
     return encoded
 
 
 def decode_callback_data(callback_data: str) -> dict | None:
     data = callback_data.split(';')
     try:
-        return {key: None if not data[idx] else data[idx] for idx, key in
+        return {key: None if not data[idx] else int(data[idx]) for idx, key in
                 enumerate(('callback_type', 'year', 'month', 'day', 'idx'))}
     except Exception:
         return None
@@ -112,7 +112,7 @@ def build_calendar_markup(year: int = None, month: int = None, start_day: int = 
     for week in month_calendar:
         row = []
         for day in week:
-            if day == 0 or day < start_day or day > end_day:
+            if day == 0 or not (start_day <= day <= end_day):
                 row.append(empty_btn())
             else:
                 row.append(InlineKeyboardButton(text=str(day), callback_data=encode_callback_data(
@@ -122,44 +122,55 @@ def build_calendar_markup(year: int = None, month: int = None, start_day: int = 
     return InlineKeyboardMarkup(keyboard)
 
 
-async def date_selection_handler(update: Update, context: CallbackContext, start_date: datetime.date,
-                                 end_date: datetime.date) -> CalendarStates | int:
-    def gen_calendar_with_offsets(current_date: datetime.date, month_offset: int = 0,
-                                  year_offset: int = 0) -> InlineKeyboardMarkup:
-        nonlocal start_date, end_date
-        date_with_offset = offset_date(in_date=current_date, month_offset=month_offset,
-                                       year_offset=year_offset)
+def gen_calendar_with_offsets(start_date: datetime.date,
+                              end_date: datetime.date, current_date: datetime.date = None, month_offset: int = 0,
+                              year_offset: int = 0) -> InlineKeyboardMarkup:
+    # nonlocal start_date, end_date
+    if current_date is None:
+        current_date = start_date
 
-        cur_min_day, cur_max_day = calendar.monthrange(year=date_with_offset.year, month=date_with_offset.month)
+    date_with_offset = offset_date(in_date=current_date, month_offset=month_offset,
+                                   year_offset=year_offset)
 
-        prev_month = offset_date(in_date=date_with_offset, month_offset=-1, year_offset=0) > start_date
-        next_month = offset_date(in_date=date_with_offset, month_offset=1, year_offset=0) < end_date
 
-        prev_year = offset_date(in_date=date_with_offset, month_offset=0, year_offset=-1) > start_date
-        next_year = offset_date(in_date=date_with_offset, month_offset=0, year_offset=1) > end_date
+    if not start_date <= date_with_offset <= end_date:
+        date_with_offset = current_date
 
-        if not prev_month:
-            cur_min_day = start_date.day
-        if not next_month:
-            cur_max_day = end_date.day
+    cur_min_day, cur_max_day = 1, calendar.monthrange(year=date_with_offset.year, month=date_with_offset.month)[1]
 
-        return build_calendar_markup(year=date_with_offset.year, month=date_with_offset.month, start_day=cur_min_day,
-                                     end_day=cur_max_day, prev_month=prev_month, next_month=next_month,
-                                     prev_year=prev_year, next_year=next_year)
+    prev_month = offset_date(in_date=date_with_offset, month_offset=-1, year_offset=0) > start_date
+    next_month = offset_date(in_date=date_with_offset, month_offset=1, year_offset=0) < end_date
+
+    prev_year = offset_date(in_date=date_with_offset, month_offset=0, year_offset=-1) > start_date
+    next_year = offset_date(in_date=date_with_offset, month_offset=0, year_offset=1) > end_date
+
+    if date_with_offset.replace(day=1) == start_date.replace(day=1):
+        cur_min_day = start_date.day
+    if date_with_offset.replace(day=1) == end_date.replace(day=1):
+        cur_max_day = end_date.day
+
+    return build_calendar_markup(year=date_with_offset.year, month=date_with_offset.month, start_day=cur_min_day,
+                                 end_day=cur_max_day, prev_month=prev_month, next_month=next_month,
+                                 prev_year=prev_year, next_year=next_year)
+
+
+async def date_selection_handler(update: Update, context: CallbackContext) -> CalendarStates | int:
+    start_date = context.user_data['calendar_start_date']
+    end_date = context.user_data['calendar_end_date']
 
     query = update.callback_query
 
     if query is None:
-        await update.message.reply_text(text='Выберете дату', reply_markup=gen_calendar_with_offsets(end_date))
-        return CalendarStates.CONTINUE
-
-    # print(query)
+        # await update.message.reply_text(text='Выберете дату:',
+        #                                 reply_markup=gen_calendar_with_offsets(start_date=start_date,
+        #                                                                        end_date=end_date))
+        return CalendarStates.DATE_SELECTION_AWAIT
 
     callback_data = decode_callback_data(query.data)
 
     if callback_data is None:
         await query.answer()
-        return CalendarStates.CONTINUE
+        return CalendarStates.DATE_SELECTION_AWAIT
 
     def date_from_callback(_callback_data: dict) -> datetime.date:
         return datetime.date(
@@ -169,38 +180,33 @@ async def date_selection_handler(update: Update, context: CallbackContext, start
     cur_date_from_callback = date_from_callback(callback_data)
 
     await query.answer()
-
-    match CalendarCallbackTypes[callback_data['callback_type']]:
+    match callback_data['callback_type']:
         case CalendarCallbackTypes.SELECT_DATE:
             context.user_data['selected_date'] = cur_date_from_callback
-            await update.message.edit_reply_markup()
+            await query.edit_message_reply_markup()
             return ConversationHandler.END
 
         case CalendarCallbackTypes.PREV_MONTH:
-            await update.message.edit_reply_markup(
-                gen_calendar_with_offsets(current_date=cur_date_from_callback, month_offset=-1))
+            await query.edit_message_reply_markup(
+                gen_calendar_with_offsets(start_date=start_date, end_date=end_date, current_date=cur_date_from_callback,
+                                          month_offset=-1))
 
         case CalendarCallbackTypes.NEXT_MONTH:
-            await update.message.edit_reply_markup(
-                gen_calendar_with_offsets(current_date=cur_date_from_callback, month_offset=1))
+            await query.edit_message_reply_markup(
+                gen_calendar_with_offsets(start_date=start_date, end_date=end_date, current_date=cur_date_from_callback,
+                                          month_offset=1))
 
         case CalendarCallbackTypes.PREV_YEAR:
-            await update.message.edit_reply_markup(
-                gen_calendar_with_offsets(current_date=cur_date_from_callback, year_offset=-1))
+            await query.edit_message_reply_markup(
+                gen_calendar_with_offsets(start_date=start_date, end_date=end_date, current_date=cur_date_from_callback,
+                                          year_offset=-1))
 
         case CalendarCallbackTypes.NEXT_YEAR:
-            await update.message.edit_reply_markup(
-                gen_calendar_with_offsets(current_date=cur_date_from_callback, year_offset=1))
+            await query.edit_message_reply_markup(
+                gen_calendar_with_offsets(start_date=start_date, end_date=end_date, current_date=cur_date_from_callback,
+                                          year_offset=1))
 
         case _:
             await query.answer()
 
-    return CalendarStates.CONTINUE
-
-
-def create_handler(start_date: datetime.date, end_date: datetime.date) -> Callable[
-    [Update, CallbackContext], Coroutine]:
-    async def _date_selection_handler(update: Update, context: CallbackContext):
-        return await date_selection_handler(update=update, context=context, start_date=start_date, end_date=end_date)
-
-    return _date_selection_handler
+    return CalendarStates.DATE_SELECTION_AWAIT
