@@ -9,6 +9,11 @@ def get_category_by_name(category_name: str, user_db: User) -> Category | None:
         category_db = db.query(Category).filter_by(name=category_name, user_id=user_db.id).first()
         return category_db
 
+def get_category_by_id(category_id: int, user_db: User) -> Category | None:
+    with get_db() as db:
+        category_db = db.query(Category).filter_by(id=category_id, user_id=user_db.id).first()
+        return category_db
+
 
 def create_category(category_name: str, user_db: User) -> Category:
     category_db = Category(name=category_name, creation_date=datetime.datetime.now().date(), user_id=user_db.id)

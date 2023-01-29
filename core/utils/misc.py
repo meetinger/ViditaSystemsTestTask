@@ -38,4 +38,3 @@ def offset_date(in_date: datetime.date, year_offset: int = 0, month_offset: int 
     replace_day = cur_day if cur_day < max_day else max_day
 
     return in_date.replace(year=replace_year, month=replace_month, day=replace_day)
-

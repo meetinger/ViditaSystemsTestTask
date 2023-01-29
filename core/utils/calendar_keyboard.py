@@ -10,7 +10,6 @@ from core.utils.misc import stringify, offset_date
 
 class CalendarStates:
     DATE_SELECTION_AWAIT = 1
-    # END = enum.auto
 
 
 class CalendarCallbackTypes:
@@ -71,8 +70,6 @@ def build_calendar_markup(year: int = None, month: int = None, start_day: int = 
         ignore_callback_idx += 1
         return encoded
 
-    # ignore_callback = ignore_callback_data()
-
     def empty_btn():
         return InlineKeyboardButton(text=' ', callback_data=ignore_callback_data())
 
@@ -125,13 +122,11 @@ def build_calendar_markup(year: int = None, month: int = None, start_day: int = 
 def gen_calendar_with_offsets(start_date: datetime.date,
                               end_date: datetime.date, current_date: datetime.date = None, month_offset: int = 0,
                               year_offset: int = 0) -> InlineKeyboardMarkup:
-    # nonlocal start_date, end_date
     if current_date is None:
         current_date = start_date
 
     date_with_offset = offset_date(in_date=current_date, month_offset=month_offset,
                                    year_offset=year_offset)
-
 
     if not start_date <= date_with_offset <= end_date:
         date_with_offset = current_date
@@ -154,16 +149,13 @@ def gen_calendar_with_offsets(start_date: datetime.date,
                                  prev_year=prev_year, next_year=next_year)
 
 
-async def date_selection_handler(update: Update, context: CallbackContext) -> CalendarStates | int:
+async def date_selection_handler(update: Update, context: CallbackContext) -> int:
     start_date = context.user_data['calendar_start_date']
     end_date = context.user_data['calendar_end_date']
 
     query = update.callback_query
 
     if query is None:
-        # await update.message.reply_text(text='Выберете дату:',
-        #                                 reply_markup=gen_calendar_with_offsets(start_date=start_date,
-        #                                                                        end_date=end_date))
         return CalendarStates.DATE_SELECTION_AWAIT
 
     callback_data = decode_callback_data(query.data)

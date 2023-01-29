@@ -21,7 +21,7 @@ def build_categories_buttons(categories: list[Category]) -> str | list[InlineKey
     return [InlineKeyboardButton(text=category.name, callback_data=str(category.user_id)) for category in categories]
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> User:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user = update.message.from_user
     user_db = users_cruds.get_user_by_telegram_id(tg_user.id)
     if user_db is None:
@@ -29,10 +29,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> User:
         await update.message.reply_text('Вы успешно зарегестрированы!')
     else:
         await update.message.reply_text('Вы уже зарегестрированы!')
-    return user_db
+
+@users_cruds.needs_user
+async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
+    if not context.args:
+        await update.message.reply_text(f'Неверный синтаксис команды')
+        return
+    try:
+        timezone = int(context.args[0])
+    except Exception as e:
+        await update.message.reply_text(f'Неверный синтаксис команды')
+        return
+    users_cruds.set_user_utc_offset(utc_offset=timezone, user_db=user_db)
+    await update.message.reply_text(f'Часовой пояс установлен: {timezone}min от UTC')
 
 
 @users_cruds.needs_user
+@users_cruds.needs_timezone
 async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     user_categories = user_db.user_categories
 
@@ -46,7 +59,11 @@ async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db
 
 
 @users_cruds.needs_user
+@users_cruds.needs_timezone
 async def set_category(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
+    if not context.args:
+        await update.message.reply_text(f'Неверный синтаксис команды')
+        return
     category_name = " ".join(context.args)
     category_db = categories_cruds.get_category_by_name(category_name=category_name, user_db=user_db)
     if category_db is None:
@@ -55,12 +72,15 @@ async def set_category(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
     else:
         await update.message.reply_text('Категория с таким именем уже существует')
 
-
-async def category_callback_handler(update: Update, context: CallbackContext):
+@users_cruds.needs_user
+@users_cruds.needs_timezone
+async def category_callback_handler(update: Update, context: CallbackContext, user_db: User):
     query = update.callback_query
     await query.answer()
-
     category_id = int(query.data)
+    category = categories_cruds.get_category_by_id(category_id=category_id, user_db=user_db)
+    context.user_data['calendar_start_date'] = category.creation_date
+    context.user_data['calendar_end_date'] = datetime.datetime.now().date()
 
 
 async def calendar_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -88,8 +108,9 @@ async def show_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 HANDLERS = [CommandHandler('start', start), CommandHandler('categories', categories),
-            CommandHandler('calendar_test', calendar_test),
-            ConversationHandler(entry_points=[CommandHandler('show_calendar', show_calendar_handler)],
+            CommandHandler('set_utc_offset', set_utc_offset),
+            # CommandHandler('calendar_test', calendar_test),
+            ConversationHandler(entry_points=[CallbackQueryHandler()],
                                 states={
                                     CalendarStates.DATE_SELECTION_AWAIT: [CallbackQueryHandler(date_selection_handler)]
                                 },

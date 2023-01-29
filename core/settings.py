@@ -1,11 +1,17 @@
-from os import environ
+import datetime
+import time
 
+from os import environ
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 class Settings:
+    def __init__(self):
+        environ['TZ'] = 'UTC'
+        time.tzset()
+
     BOT_TOKEN: str = environ['BOT_TOKEN']
 
     # DB Setup
