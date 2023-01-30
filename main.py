@@ -11,7 +11,6 @@ from telegram.ext import Application
 application = Application.builder().token(settings.BOT_TOKEN).build()
 
 async def main():
-
     application.add_handlers(HANDLERS)
     await application.bot.set_my_commands(COMMANDS.items())
     await application.initialize()

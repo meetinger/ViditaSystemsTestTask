@@ -35,7 +35,7 @@ services:
       - postgres
 
   pgadmin:
-    container_name: wb_pgadmin_container
+    container_name: vd_pgadmin_container
     image: dpage/pgadmin4:6.17
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PG_ADMIN_DEFAULT_EMAIL}
@@ -48,6 +48,26 @@ services:
     restart: unless-stopped
     networks:
       - postgres
+
+  bot:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    container_name: vd_bot
+    restart: always
+    env_file:
+      - .env_docker
+    depends_on:
+      - postgres_db
+      - postgres_test_db
+      - pgadmin
+    volumes:
+      - .:/docker_app
+    ports:
+      - "${WEB_HOOK_PORT}:${WEB_HOOK_PORT}"
+    networks:
+      - postgres
+
 
 networks:
   postgres:
