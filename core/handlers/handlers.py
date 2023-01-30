@@ -5,7 +5,7 @@ from decimal import Decimal
 import db.crud.users_cruds as users_cruds
 import db.crud.categories_cruds as categories_cruds
 
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from telegram.ext import ContextTypes, CommandHandler, CallbackContext, ConversationHandler, CallbackQueryHandler, \
     MessageHandler, filters
 
@@ -28,6 +28,7 @@ class States:
 
 def build_cancel_markup():
     return InlineKeyboardMarkup([[InlineKeyboardButton('Отмена', callback_data='cancel')]])
+
 
 def build_expenses_reply_data(expenses_lst: list[Expense]) -> dict:
     expenses_text_lst = ['Статьи расходов:']
@@ -102,8 +103,8 @@ async def category_callback_handler(update: Update, context: CallbackContext, us
     context.user_data['calendar_end_date'] = end_date
 
     await update.callback_query.message.reply_text('Выберете дату:',
-                                                    reply_markup=gen_calendar_with_offsets(start_date=start_date,
-                                                                                           end_date=end_date))
+                                                   reply_markup=gen_calendar_with_offsets(start_date=start_date,
+                                                                                          end_date=end_date))
 
     return States.DATE_SELECTION_AWAIT
 
@@ -154,19 +155,23 @@ async def expense_amount_and_create_expense(update: Update, context: ContextType
         await update.message.reply_text('Введите расход(только цифры):')
         return States.ENTER_EXPENSE_AMOUNT
     expense_in = context.user_data['expense_data']
-    expenses_cruds.create_expense(expense_in=expense_in, category_db=context.user_data['category'], user_db=user_db, creation_date=context.user_data['selected_date'])
+    expenses_cruds.create_expense(expense_in=expense_in, category_db=context.user_data['category'], user_db=user_db,
+                                  creation_date=context.user_data['selected_date'])
     await update.message.reply_text('Статья расходов добавлена')
 
-    expenses = expenses_cruds.get_category_expenses_by_date(category_db=context.user_data['category'], creation_date=context.user_data['selected_date'],
+    expenses = expenses_cruds.get_category_expenses_by_date(category_db=context.user_data['category'],
+                                                            creation_date=context.user_data['selected_date'],
                                                             user_db=user_db)
     await update.message.reply_text(**build_expenses_reply_data(expenses))
     return States.EXPENSES_ACTION_AWAIT
+
 
 @users_cruds.needs_user
 async def total(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     expenses = expenses_cruds.get_all_user_expenses(user_db=user_db)
     total_sum = sum(expense.amount for expense in expenses)
     await update.message.reply_text(f'За всё время расходы составили:\n{total_sum}')
+
 
 @users_cruds.needs_user
 async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
@@ -208,4 +213,10 @@ HANDLERS = [CommandHandler('start', start),
                                 },
                                 fallbacks=[CallbackQueryHandler(cancel)], per_message=False
                                 ),
+            ]
+
+COMMANDS = [BotCommand('start', 'Запуск бота и регистрация'),
+            BotCommand('set_category', '/set_category имя_категории\nСоздать категорию'),
+            BotCommand('set_utc_offset', '/set_utc_offset время_в_минутах_от_UTC\nУстановить часовой пояс'),
+            BotCommand('total', 'Расходы за всё время'),
             ]
