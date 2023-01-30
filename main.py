@@ -10,12 +10,22 @@ from telegram.ext import Application
 
 application = Application.builder().token(settings.BOT_TOKEN).build()
 
-async def main():
+async def run_bot(update_method='webhook'):
     application.add_handlers(HANDLERS)
     await application.bot.set_my_commands(COMMANDS.items())
     await application.initialize()
     await application.start()
-    await application.updater.start_polling()
+    if update_method == 'webhook':
+        await application.updater.start_webhook(
+            listen='0.0.0.0',
+            port=settings.WEBHOOK_PORT,
+            secret_token=settings.BOT_TOKEN,
+            key='private.key',
+            cert='cert.pem',
+            webhook_url=settings.WEBHOOK_URL
+        )
+    else:
+        await application.updater.start_polling()
     await notificator.fetch_users_to_notifications(application)
     notificator.start_periodic_fetch_users(application)
     while True:
@@ -26,5 +36,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(run_bot(update_method='webhook'))
 

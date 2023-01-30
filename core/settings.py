@@ -11,6 +11,9 @@ class Settings:
 
     BOT_TOKEN: str = environ['BOT_TOKEN']
 
+    WEBHOOK_PORT: int = int(environ['WEBHOOK_PORT'])
+    WEBHOOK_URL: str = environ['WEBHOOK_URL']
+
     # DB Setup
     DB_USER: str = environ['DB_USER']
     DB_PASSWORD: str = environ['DB_PASSWORD']
