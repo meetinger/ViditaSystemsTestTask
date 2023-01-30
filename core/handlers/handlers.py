@@ -11,6 +11,7 @@ from telegram.ext import ContextTypes, CommandHandler, CallbackContext, Conversa
     MessageHandler, filters
 
 from core.handlers.commands import COMMANDS
+from core.handlers.notifications import notificator
 from core.utils.calendar_keyboard import gen_calendar_with_offsets, \
     create_date_selection_handler
 from core.utils.misc import get_utc_datetime_now
@@ -197,6 +198,7 @@ async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, use
 @users_cruds.utc_warning
 async def enable_notifications(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     users_cruds.update_user_options(options_in={'notifications_enabled': True}, user_db=user_db)
+    await notificator.add_user_to_notifications(user_db=user_db, context=context)
     await update.message.reply_text(text='Уведомления включены!')
 
 
@@ -204,6 +206,7 @@ async def enable_notifications(update: Update, context: ContextTypes.DEFAULT_TYP
 @users_cruds.utc_warning
 async def disable_notifications(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     users_cruds.update_user_options(options_in={'notifications_enabled': False}, user_db=user_db)
+    notificator.delete_user_from_notifications(user_db=user_db, context=context)
     await update.message.reply_text(text='Уведомления отключены!')
 
 

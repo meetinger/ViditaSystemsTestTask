@@ -3,7 +3,7 @@ from typing import Callable, Any, Coroutine
 
 from telegram.ext import CallbackContext, ContextTypes
 
-from core.utils.misc import get_server_datetime_by_user, get_time_from_datetime, get_server_timezone
+from core.utils.misc import get_server_datetime_by_user, get_server_timezone
 from db.crud import users_cruds
 from db.models import User
 
@@ -29,8 +29,10 @@ class Notificator:
     async def _add_user_to_notifications(self, user_db: User, context: CallbackContext):
         user_date: datetime.date = user_db.user_datetime.date()
         callback = self.create_notification_task(user_db=user_db, user_date=user_date)
+        # when_datetime = get_server_datetime_by_user(
+        #     user_datetime=datetime.datetime.now().replace(hour=23, minute=59), user_utc_offset=user_db.user_utc_offset)
         when_datetime = get_server_datetime_by_user(
-            user_datetime=datetime.datetime.now().replace(hour=23, minute=59), user_utc_offset=user_db.user_utc_offset)
+            user_datetime=datetime.datetime.now()+datetime.timedelta(seconds=10), user_utc_offset=user_db.user_utc_offset)
         context.job_queue.run_once(callback=callback, when=when_datetime, name=str(user_db.id),
                                    chat_id=user_db.telegram_id, user_id=user_db.telegram_id)
 
@@ -40,7 +42,7 @@ class Notificator:
             await self._add_user_to_notifications(user_db=user_db, context=context)
 
     async def add_user_to_notifications(self, user_db: User, context: CallbackContext):
-        if user_db.utc_offset is not None and user_db.get('notifications_enabled'):
+        if user_db.utc_offset is not None and user_db.options.get('notifications_enabled'):
             await self._add_user_to_notifications(user_db=user_db, context=context)
 
     def delete_user_from_notifications(self, user_db: User, context: CallbackContext):
