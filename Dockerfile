@@ -5,4 +5,4 @@ COPY ".env_docker" ".env"
 COPY . .
 RUN pip install -r requirements.txt
 ENV PYTHONUNBUFFERED 1
-CMD ["python", "-u", "docker_app/main.py"]
+CMD ["python", "-u", "main.py"]

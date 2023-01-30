@@ -11,9 +11,7 @@ services:
     volumes:
       - ./postgres:/postgres
     ports:
-      - "${DB_PORT}:5432"
-#    expose:
-#      - "5432"
+      - ${DB_PORT}:5432
     networks:
       - postgres
 
@@ -28,9 +26,7 @@ services:
     volumes:
       - ./postgres:/postgres
     ports:
-      - "${DB_TEST_PORT}:5432"
-#    expose:
-#      - "5432"
+      - ${DB_TEST_PORT}:5432
     networks:
       - postgres
 
@@ -44,10 +40,26 @@ services:
     volumes:
       - ./pgadmin:/pgadmin
     ports:
-      - "${PG_ADMIN_PORT}:80"
+      - ${PG_ADMIN_PORT}:80
     restart: unless-stopped
     networks:
       - postgres
+
+  migration:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    env_file:
+      - .env_docker
+    depends_on:
+      - postgres_db
+      - postgres_test_db
+      - pgadmin
+    volumes:
+      - .:/docker_app
+    networks:
+      - postgres
+    command: alembic upgrade head
 
   bot:
     build:
@@ -61,12 +73,14 @@ services:
       - postgres_db
       - postgres_test_db
       - pgadmin
+      - migration
     volumes:
       - .:/docker_app
     ports:
-      - "${WEB_HOOK_PORT}:${WEB_HOOK_PORT}"
+      - ${WEBHOOK_PORT}:${WEBHOOK_PORT}
     networks:
       - postgres
+    command: python main.py
 
 
 networks:
