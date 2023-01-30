@@ -28,8 +28,16 @@ def set_user_utc_offset(utc_offset: int, user_db: User) -> User:
         user_db.utc_offset = utc_offset
         db.add(user_db)
         db.commit()
+        db.refresh(user_db)
         return user_db
 
+def update_user_options(options_in: dict, user_db: User) -> User:
+    with get_db() as db:
+        user_db.options = user_db.options | options_in
+        db.add(user_db)
+        db.commit()
+        db.refresh(user_db)
+        return user_db
 
 def needs_user(func):
     @functools.wraps(func)

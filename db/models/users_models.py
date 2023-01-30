@@ -1,6 +1,7 @@
 import datetime
 
-from sqlalchemy import Column, Integer, String, Date, DateTime
+from sqlalchemy import Column, Integer, Date
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from core.utils.misc import get_utc_datetime_now
@@ -15,6 +16,8 @@ class User(Base):
     telegram_id = Column(Integer, index=True)
     creation_date = Column(Date)
     utc_offset = Column(Integer, nullable=True)
+
+    options = Column(JSONB, index=True, default={})
 
     user_categories = relationship('Category', lazy='subquery', back_populates='user')
     user_expenses = relationship('Expense', lazy='subquery', back_populates='user')
