@@ -29,7 +29,7 @@ def delete_expense(expense_id: int, user_db: User) -> bool:
         return False
 
 
-def get_user_expenses(user_db: User) -> list[Expense]:
+def get_all_user_expenses(user_db: User) -> list[Expense]:
     return user_db.user_expenses
 
 

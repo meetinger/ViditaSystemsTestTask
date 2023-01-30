@@ -1,13 +1,12 @@
-from core.handlers.handlers import HANDLERS as COMMAND_HANDLERS
+from core.handlers.handlers import HANDLERS
 
-from core.handlers.handlers import start
 from core.settings import settings
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application
 
 
 def main():
     application = Application.builder().token(settings.BOT_TOKEN).build()
-    application.add_handlers(COMMAND_HANDLERS)
+    application.add_handlers(HANDLERS)
     application.run_polling()
 
 

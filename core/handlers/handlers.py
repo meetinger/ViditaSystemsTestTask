@@ -162,12 +162,11 @@ async def expense_amount_and_create_expense(update: Update, context: ContextType
     await update.message.reply_text(**build_expenses_reply_data(expenses))
     return States.EXPENSES_ACTION_AWAIT
 
-
-async def cancel(update: Update, context: CallbackContext):
-    await update.callback_query.message.reply_text('Команда прервана')
-    await update.callback_query.message.edit_reply_markup()
-    return ConversationHandler.END
-
+@users_cruds.needs_user
+async def total(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
+    expenses = expenses_cruds.get_all_user_expenses(user_db=user_db)
+    total_sum = sum(expense.amount for expense in expenses)
+    await update.message.reply_text(f'За всё время расходы составили:\n{total_sum}')
 
 @users_cruds.needs_user
 async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
@@ -183,9 +182,16 @@ async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     await update.message.reply_text(f'Часовой пояс установлен: {timezone}min от UTC')
 
 
+async def cancel(update: Update, context: CallbackContext):
+    await update.callback_query.message.reply_text('Команда прервана')
+    await update.callback_query.message.edit_reply_markup()
+    return ConversationHandler.END
+
+
 HANDLERS = [CommandHandler('start', start),
             CommandHandler('set_category', set_category),
             CommandHandler('set_utc_offset', set_utc_offset),
+            CommandHandler('total', total),
             ConversationHandler(entry_points=[CommandHandler('categories', categories)],
                                 states={
                                     States.CATEGORIES_SELECTION_AWAIT: [
