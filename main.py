@@ -10,8 +10,7 @@ application = Application.builder().token(settings.BOT_TOKEN).build()
 
 async def main():
     application.add_handlers(HANDLERS)
-    await application.bot.set_my_commands(COMMANDS)
-    await application.bot.set_de
+    await application.bot.set_my_commands(COMMANDS.items())
     await application.initialize()
     await application.start()
     await application.updater.start_polling()

@@ -9,6 +9,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, BotComm
 from telegram.ext import ContextTypes, CommandHandler, CallbackContext, ConversationHandler, CallbackQueryHandler, \
     MessageHandler, filters
 
+from core.handlers.commands import COMMANDS
 from core.utils.calendar_keyboard import gen_calendar_with_offsets, \
     create_date_selection_handler
 from core.utils.misc import get_utc_datetime_now
@@ -45,8 +46,8 @@ def build_categories_buttons(categories_lst: list[Category]) -> str | InlineKeyb
     if not categories_lst:
         return 'У Вас ещё нет категорий расходов'
     return InlineKeyboardMarkup(
-        [[InlineKeyboardButton(text=category.name, callback_data=str(category.user_id)) for category in
-          categories_lst]])
+        [[InlineKeyboardButton(text=category.name, callback_data=str(category.user_id))] for category in
+         categories_lst])
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -57,9 +58,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text('Вы успешно зарегестрированы!')
     else:
         await update.message.reply_text('Вы уже зарегестрированы!')
+    return ConversationHandler.END
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     user_categories = user_db.user_categories
 
@@ -74,10 +77,11 @@ async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def set_category(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     if not context.args:
-        await update.message.reply_text(f'Неверный синтаксис команды')
-        return
+        await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_category"]}')
+        return ConversationHandler.END
     category_name = " ".join(context.args)
     category_db = categories_cruds.get_category_by_name(category_name=category_name, user_db=user_db)
     if category_db is None:
@@ -85,9 +89,11 @@ async def set_category(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
         await update.message.reply_text('Категория создана')
     else:
         await update.message.reply_text('Категория с таким именем уже существует')
+    return ConversationHandler.END
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def category_callback_handler(update: Update, context: CallbackContext, user_db: User):
     query = update.callback_query
     await query.answer()
@@ -110,6 +116,7 @@ async def category_callback_handler(update: Update, context: CallbackContext, us
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def show_expenses(update: Update, context: CallbackContext, user_db: User):
     category = context.user_data['category']
     creation_date = context.user_data['selected_date']
@@ -120,6 +127,7 @@ async def show_expenses(update: Update, context: CallbackContext, user_db: User)
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def expenses_action_handler(update: Update, context: CallbackContext, user_db: User):
     query = update.callback_query
     await query.answer()
@@ -141,6 +149,7 @@ async def expenses_action_handler(update: Update, context: CallbackContext, user
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def expense_name(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     context.user_data['expense_data']['name'] = update.message.text
     await update.message.reply_text('Введите расход(только цифры):', reply_markup=build_cancel_markup())
@@ -148,6 +157,7 @@ async def expense_name(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def expense_amount_and_create_expense(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     try:
         context.user_data['expense_data']['amount'] = Decimal(update.message.text)
@@ -167,6 +177,7 @@ async def expense_amount_and_create_expense(update: Update, context: ContextType
 
 
 @users_cruds.needs_user
+@users_cruds.utc_warning
 async def total(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     expenses = expenses_cruds.get_all_user_expenses(user_db=user_db)
     total_sum = sum(expense.amount for expense in expenses)
@@ -176,16 +187,17 @@ async def total(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: Use
 @users_cruds.needs_user
 async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     if not context.args:
-        await update.message.reply_text(f'Неверный синтаксис команды')
+        await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_utc_offset"]}')
         return
     try:
         timezone = int(context.args[0])
     except (ValueError, IndexError):
-        await update.message.reply_text(f'Неверный синтаксис команды')
+        await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_utc_offset"]}')
         return
     users_cruds.set_user_utc_offset(utc_offset=timezone, user_db=user_db)
     await update.message.reply_text(f'Часовой пояс установлен: {timezone}min от UTC')
 
+# async def enable_notifications()
 
 async def cancel(update: Update, context: CallbackContext):
     await update.callback_query.message.reply_text('Команда прервана')
@@ -211,12 +223,6 @@ HANDLERS = [CommandHandler('start', start),
                                     States.ENTER_EXPENSE_AMOUNT: [MessageHandler(filters=filters.ALL,
                                                                                  callback=expense_amount_and_create_expense)],
                                 },
-                                fallbacks=[CallbackQueryHandler(cancel)], per_message=False
+                                fallbacks=[CallbackQueryHandler(cancel)], per_message=False, allow_reentry=True
                                 ),
-            ]
-
-COMMANDS = [BotCommand('start', 'Запуск бота и регистрация'),
-            BotCommand('set_category', '/set_category имя_категории\nСоздать категорию'),
-            BotCommand('set_utc_offset', '/set_utc_offset время_в_минутах_от_UTC\nУстановить часовой пояс'),
-            BotCommand('total', 'Расходы за всё время'),
             ]
