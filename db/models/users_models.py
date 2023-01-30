@@ -23,5 +23,10 @@ class User(Base):
     user_expenses = relationship('Expense', lazy='subquery', back_populates='user')
 
     @property
-    def user_datetime(self):
-        return get_utc_datetime_now() + datetime.timedelta(minutes=self.utc_offset)
+    def user_utc_offset(self) -> datetime.timedelta:
+        return datetime.timedelta(minutes=self.utc_offset)
+
+    @property
+    def user_datetime(self) -> datetime.datetime:
+        return get_utc_datetime_now().astimezone(datetime.timezone(self.user_utc_offset))
+

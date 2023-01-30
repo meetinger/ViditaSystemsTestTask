@@ -1,6 +1,7 @@
 import datetime
 import decimal
 from decimal import Decimal
+from pprint import pprint
 
 import db.crud.users_cruds as users_cruds
 import db.crud.categories_cruds as categories_cruds
@@ -214,6 +215,13 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=build_help_str())
 
 
+async def debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    jobs = context.job_queue.jobs()
+    for job in jobs:
+        print(job.name, job.callback)
+        # await job.run(context)
+    await update.message.reply_text(text='Дебаг')
+
 async def cancel(update: Update, context: CallbackContext):
     await update.callback_query.message.reply_text('Команда прервана')
     await update.callback_query.message.edit_reply_markup()
@@ -227,6 +235,7 @@ HANDLERS = [CommandHandler('start', start),
             CommandHandler('enable_notifications', enable_notifications),
             CommandHandler('disable_notifications', disable_notifications),
             CommandHandler('help', help),
+            CommandHandler('debug', debug),
             ConversationHandler(entry_points=[CommandHandler('categories', categories)],
                                 states={
                                     States.CATEGORIES_SELECTION_AWAIT: [

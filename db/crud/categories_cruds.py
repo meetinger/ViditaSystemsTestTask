@@ -24,7 +24,3 @@ def create_category(category_name: str, user_db: User) -> Category:
         db.commit()
         db.refresh(category_db)
     return category_db
-
-
-def get_users_categories(user_db: User) -> list[Category] | list:
-    return user_db.user_categories

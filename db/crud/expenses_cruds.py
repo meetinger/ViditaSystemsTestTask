@@ -32,6 +32,9 @@ def delete_expense(expense_id: int, user_db: User) -> bool:
 def get_all_user_expenses(user_db: User) -> list[Expense]:
     return user_db.user_expenses
 
+def get_user_expenses_by_date(expense_date: datetime.date, user_db: User) -> list:
+    return user_db.user_expenses.filter_by(creation_date=expense_date).all()
+
 
 def get_all_category_expenses(category_db: Category, user_db: User) -> list:
     with get_db() as db:

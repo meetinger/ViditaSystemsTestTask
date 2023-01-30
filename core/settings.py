@@ -8,9 +8,6 @@ load_dotenv()
 
 
 class Settings:
-    def __init__(self):
-        environ['TZ'] = 'UTC'
-        time.tzset()
 
     BOT_TOKEN: str = environ['BOT_TOKEN']
 

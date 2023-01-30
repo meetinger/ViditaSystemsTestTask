@@ -1,6 +1,7 @@
 import datetime
 import functools
 import telegram
+from sqlalchemy import and_, Boolean
 from telegram import Update
 
 from core.handlers.commands import COMMANDS
@@ -38,6 +39,11 @@ def update_user_options(options_in: dict, user_db: User) -> User:
         db.commit()
         db.refresh(user_db)
         return user_db
+
+def get_users_for_notifications() -> list:
+    with get_db() as db:
+        return db.query(User).filter(and_(User.utc_offset != None,
+                                          User.options['notifications_enabled'].astext.cast(Boolean)==True)).all()
 
 def needs_user(func):
     @functools.wraps(func)
