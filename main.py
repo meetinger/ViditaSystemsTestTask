@@ -1,6 +1,6 @@
-from core.handlers.commands_handlers import HANDLERS as COMMAND_HANDLERS
+from core.handlers.handlers import HANDLERS as COMMAND_HANDLERS
 
-from core.handlers.commands_handlers import start
+from core.handlers.handlers import start
 from core.settings import settings
 from telegram.ext import Application, CommandHandler
 

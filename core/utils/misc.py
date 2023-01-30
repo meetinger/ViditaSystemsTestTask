@@ -15,6 +15,10 @@ def stringify(val: Any) -> str:
     return str(val)
 
 
+def get_utc_datetime_now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
 def offset_date(in_date: datetime.date, year_offset: int = 0, month_offset: int = 0):
     cur_year = in_date.year
     cur_month = in_date.month
@@ -30,8 +34,8 @@ def offset_date(in_date: datetime.date, year_offset: int = 0, month_offset: int 
         month_delta = -(12 - abs(month_delta))
         year_delta += 1
 
-    replace_year = cur_year+year_delta
-    replace_month = cur_month+month_delta
+    replace_year = cur_year + year_delta
+    replace_month = cur_month + month_delta
 
     max_day = calendar.monthrange(year=replace_year, month=replace_month)[1]
 

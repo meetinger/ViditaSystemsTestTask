@@ -1,5 +1,6 @@
 import datetime
 
+from core.utils.misc import get_utc_datetime_now
 from db.database import get_db
 from db.models import User, Category
 
@@ -16,7 +17,7 @@ def get_category_by_id(category_id: int, user_db: User) -> Category | None:
 
 
 def create_category(category_name: str, user_db: User) -> Category:
-    category_db = Category(name=category_name, creation_date=datetime.datetime.now().date(), user_id=user_db.id)
+    category_db = Category(name=category_name, creation_date=get_utc_datetime_now().date(), user_id=user_db.id)
     with get_db() as db:
         db.add(category_db)
         db.commit()

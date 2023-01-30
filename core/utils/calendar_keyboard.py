@@ -1,15 +1,13 @@
+import asyncio
 import calendar
 import datetime
 import locale
+from typing import Callable, Coroutine, Any
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import CallbackContext, ConversationHandler
 
-from core.utils.misc import stringify, offset_date
-
-
-class CalendarStates:
-    DATE_SELECTION_AWAIT = 1
+from core.utils.misc import stringify, offset_date, get_utc_datetime_now
 
 
 class CalendarCallbackTypes:
@@ -47,7 +45,7 @@ def build_calendar_markup(year: int = None, month: int = None, start_day: int = 
                           next_year: bool = True):
     keyboard = []
 
-    date_now = datetime.datetime.now().date()
+    date_now = get_utc_datetime_now().date()
 
     if year is None:
         year = date_now.year
@@ -123,7 +121,7 @@ def gen_calendar_with_offsets(start_date: datetime.date,
                               end_date: datetime.date, current_date: datetime.date = None, month_offset: int = 0,
                               year_offset: int = 0) -> InlineKeyboardMarkup:
     if current_date is None:
-        current_date = start_date
+        current_date = end_date
 
     date_with_offset = offset_date(in_date=current_date, month_offset=month_offset,
                                    year_offset=year_offset)
@@ -149,20 +147,22 @@ def gen_calendar_with_offsets(start_date: datetime.date,
                                  prev_year=prev_year, next_year=next_year)
 
 
-async def date_selection_handler(update: Update, context: CallbackContext) -> int:
+async def date_selection_handler(update: Update, context: CallbackContext, await_selection_state: int,
+                                 selected_state: int = None,
+                                 selected_callback: Callable[[Update, CallbackContext], Any] = None) -> int:
     start_date = context.user_data['calendar_start_date']
     end_date = context.user_data['calendar_end_date']
 
     query = update.callback_query
 
     if query is None:
-        return CalendarStates.DATE_SELECTION_AWAIT
+        return await_selection_state
 
     callback_data = decode_callback_data(query.data)
 
     if callback_data is None:
         await query.answer()
-        return CalendarStates.DATE_SELECTION_AWAIT
+        return await_selection_state
 
     def date_from_callback(_callback_data: dict) -> datetime.date:
         return datetime.date(
@@ -176,7 +176,14 @@ async def date_selection_handler(update: Update, context: CallbackContext) -> in
         case CalendarCallbackTypes.SELECT_DATE:
             context.user_data['selected_date'] = cur_date_from_callback
             await query.edit_message_reply_markup()
-            return ConversationHandler.END
+
+            if selected_callback is not None:
+                if asyncio.iscoroutinefunction(selected_callback):
+                    return await selected_callback(update, context)
+                else:
+                    return selected_callback(update, context)
+            if selected_state is not None:
+                return selected_state
 
         case CalendarCallbackTypes.PREV_MONTH:
             await query.edit_message_reply_markup(
@@ -201,4 +208,13 @@ async def date_selection_handler(update: Update, context: CallbackContext) -> in
         case _:
             await query.answer()
 
-    return CalendarStates.DATE_SELECTION_AWAIT
+    return await_selection_state
+
+
+def create_date_selection_handler(await_selection_state: int, selected_state: int = ConversationHandler.END,
+                                  selected_callback: Callable[[Update, CallbackContext], Any] = None) -> Callable[[Update, CallbackContext], Coroutine]:
+    async def _date_selection_handler(update: Update, context: CallbackContext):
+        return await date_selection_handler(update=update, context=context, await_selection_state=await_selection_state,
+                                            selected_state=selected_state, selected_callback=selected_callback)
+
+    return _date_selection_handler

@@ -1,8 +1,8 @@
 """Init
 
-Revision ID: 1256031394ab
+Revision ID: 42a538797247
 Revises: 
-Create Date: 2023-01-27 22:28:13.896157
+Create Date: 2023-01-30 02:08:11.952850
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '1256031394ab'
+revision = '42a538797247'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,7 +21,8 @@ def upgrade() -> None:
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('telegram_id', sa.Integer(), nullable=True),
-    sa.Column('registration_date', sa.Date(), nullable=True),
+    sa.Column('creation_date', sa.Date(), nullable=True),
+    sa.Column('utc_offset', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
@@ -41,7 +42,6 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
     sa.Column('amount', sa.Numeric(), nullable=True),
-    sa.Column('currency', sa.String(), nullable=True),
     sa.Column('creation_date', sa.Date(), nullable=True),
     sa.Column('category_id', sa.Integer(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
