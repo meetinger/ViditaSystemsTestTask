@@ -67,7 +67,7 @@ def needs_user(func):
     return wrapper
 
 
-def utc_warning(func):
+def timezone_warning(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         update: Update = args[0]

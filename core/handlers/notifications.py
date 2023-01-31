@@ -29,10 +29,10 @@ class Notificator:
     async def _add_user_to_notifications(self, user_db: User, context: CallbackContext):
         user_date: datetime.date = user_db.user_datetime.date()
         callback = self.create_notification_task(user_db=user_db, user_date=user_date)
-        # when_datetime = get_server_datetime_by_user(
-        #     user_datetime=datetime.datetime.now().replace(hour=23, minute=59), user_utc_offset=user_db.user_utc_offset)
         when_datetime = get_server_datetime_by_user(
-            user_datetime=datetime.datetime.now()+datetime.timedelta(seconds=10), user_utc_offset=user_db.user_utc_offset)
+            user_datetime=datetime.datetime.now().replace(hour=23, minute=59), user_utc_offset=user_db.user_utc_offset)
+        # when_datetime = get_server_datetime_by_user(
+        #     user_datetime=datetime.datetime.now()+datetime.timedelta(seconds=10), user_utc_offset=user_db.user_utc_offset)
         context.job_queue.run_once(callback=callback, when=when_datetime, name=str(user_db.id),
                                    chat_id=user_db.telegram_id, user_id=user_db.telegram_id)
 

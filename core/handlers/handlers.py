@@ -62,6 +62,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_db is None:
         user_db = users_cruds.create_user(tg_user)
         await update.message.reply_text('Вы успешно зарегестрированы!')
+        await update.message.reply_text(build_help_str())
     else:
         await update.message.reply_text('Вы уже зарегестрированы!')
     return ConversationHandler.END
@@ -209,11 +210,13 @@ async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_utc_offset"]}')
         return
     users_cruds.set_user_utc_offset(utc_offset=timezone, user_db=user_db)
+    if user_db.options.get('notifications_enabled'):
+        await notificator.add_user_to_notifications(user_db=user_db, context=context)
     await update.message.reply_text(f'Часовой пояс установлен: {timezone}min от UTC')
 
 
 @users_cruds.needs_user
-@users_cruds.utc_warning
+@users_cruds.timezone_warning
 async def enable_notifications(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     users_cruds.update_user_options(options_in={'notifications_enabled': True}, user_db=user_db)
     await notificator.add_user_to_notifications(user_db=user_db, context=context)
@@ -221,7 +224,7 @@ async def enable_notifications(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 @users_cruds.needs_user
-@users_cruds.utc_warning
+@users_cruds.timezone_warning
 async def disable_notifications(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     users_cruds.update_user_options(options_in={'notifications_enabled': False}, user_db=user_db)
     notificator.delete_user_from_notifications(user_db=user_db, context=context)
