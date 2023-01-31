@@ -106,7 +106,7 @@ async def category_action_handler(update: Update, context: CallbackContext, user
     if action == 'del_cat':
         categories_cruds.delete_category_by_id(category_id=category_id, user_db=user_db)
 
-        user_categories = user_db.user_categories
+        user_categories = users_cruds.get_user_by_telegram_id(telegram_user_id=user_db.telegram_id).user_categories
 
         reply_data = build_categories_buttons(user_categories)
 
