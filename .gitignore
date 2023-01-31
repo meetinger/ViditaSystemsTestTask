@@ -2,3 +2,5 @@
 .env
 .env_docker
 *.pyc
+cert.pem
+private.key
