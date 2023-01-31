@@ -32,10 +32,16 @@ class States:
 def build_cancel_markup() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[InlineKeyboardButton('Отмена', callback_data='cancel')]])
 
+
 def build_help_str() -> str:
     rows = ['Доступные команды:']
-    rows.extend([f'{idx}) {val}' if key in val else f'{idx}) /{key} — {val}' for idx, (key, val) in enumerate(COMMANDS.items(), start=1)])
+    rows.extend(
+        [f'{idx}) {cmd_usage}' if cmd in cmd_usage else f'{idx}) /{cmd} — {cmd_usage}' for idx, (cmd, (cmd_usage, _)) in
+         enumerate(COMMANDS.items(), start=1)])
     return '\n'.join(rows)
+
+def build_syntax_help_str(cmd_name: str) -> str:
+    return f'{COMMANDS[cmd_name][0]}\nПример использования:\n{COMMANDS[cmd_name][1]}'
 
 def build_expenses_reply_data(expenses_lst: list[Expense]) -> dict:
     expenses_text_lst = ['Статьи расходов:']
@@ -52,7 +58,8 @@ def build_categories_buttons(categories_lst: list[Category]) -> str | InlineKeyb
     if not categories_lst:
         return 'У Вас ещё нет категорий расходов'
     return InlineKeyboardMarkup(
-        [[InlineKeyboardButton(text=category.name, callback_data=f'sel_cat:{category.id}'), InlineKeyboardButton(text='Удалить', callback_data=f'del_cat:{category.id}')] for category in
+        [[InlineKeyboardButton(text=category.name, callback_data=f'sel_cat:{category.id}'),
+          InlineKeyboardButton(text='Удалить', callback_data=f'del_cat:{category.id}')] for category in
          categories_lst])
 
 
@@ -85,7 +92,7 @@ async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db
 @users_cruds.needs_user
 async def set_category(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     if not context.args:
-        await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_category"]}')
+        await update.message.reply_text(f'Неверный синтаксис команды\n{build_syntax_help_str(cmd_name="set_category")}')
         return
     category_name = " ".join(context.args)
     category_db = categories_cruds.get_category_by_name(category_name=category_name, user_db=user_db)
@@ -202,12 +209,12 @@ async def total(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: Use
 @users_cruds.needs_user
 async def set_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     if not context.args:
-        await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_utc_offset"]}')
+        await update.message.reply_text(f'Неверный синтаксис команды\n{build_syntax_help_str("set_utc_offset")}')
         return
     try:
         timezone = int(context.args[0])
     except (ValueError, IndexError):
-        await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_utc_offset"]}')
+        await update.message.reply_text(f'Неверный синтаксис команды\n{build_syntax_help_str("set_utc_offset")}')
         return
     users_cruds.set_user_utc_offset(utc_offset=timezone, user_db=user_db)
     if user_db.options.get('notifications_enabled'):
@@ -231,12 +238,14 @@ async def disable_notifications(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text(text='Уведомления отключены!')
 
 
-
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(text='Неизвестная команда!\n'+build_help_str())
+    await update.message.reply_text(text='Неизвестная команда!')
+    await update.message.reply_text(text=build_help_str())
+
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=build_help_str())
+
 
 async def cancel(update: Update, context: CallbackContext):
     await update.effective_message.reply_text('Команда прервана')

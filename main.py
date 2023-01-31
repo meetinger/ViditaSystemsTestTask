@@ -12,7 +12,7 @@ application = Application.builder().token(settings.BOT_TOKEN).build()
 
 async def run_bot(update_method='webhook'):
     application.add_handlers(HANDLERS)
-    await application.bot.set_my_commands(COMMANDS.items())
+    await application.bot.set_my_commands([(cmd, desc) for cmd, (desc, _) in COMMANDS.items()])
     await application.initialize()
     await application.start()
     if update_method == 'webhook':
