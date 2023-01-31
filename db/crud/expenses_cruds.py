@@ -23,7 +23,7 @@ def delete_expense(expense_id: int, user_db: User) -> bool:
     with get_db() as db:
         expense_db = db.query(Expense).filter_by(id=expense_id, user_id=user_db.id)
         if expense_db is not None:
-            expense_db.delete()
+            db.delete(expense_db)
             db.commit()
             return True
         return False

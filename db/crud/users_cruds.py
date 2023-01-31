@@ -3,6 +3,7 @@ import functools
 import telegram
 from sqlalchemy import and_, Boolean
 from telegram import Update
+from telegram.ext import CallbackContext
 
 from core.handlers.commands import COMMANDS
 from core.utils.misc import get_utc_datetime_now
@@ -51,13 +52,12 @@ def needs_user(func):
         update: Update = args[0]
 
         if update.message is not None:
-            msg = update.message
+            tg_user = update.message.from_user
         else:
-            msg = update.callback_query.message
-
-        tg_user = msg.from_user
+            tg_user = update.callback_query.from_user
 
         user_db = get_user_by_telegram_id(tg_user.id)
+        msg = update.effective_message
 
         if user_db is None:
             user_db = create_user(tg_user)
@@ -74,10 +74,7 @@ def utc_warning(func):
 
         user_db: User = kwargs['user_db']
 
-        if update.message is not None:
-            msg = update.message
-        else:
-            msg = update.callback_query.message
+        msg = update.effective_message
 
         if user_db.utc_offset is None:
             await msg.reply_text(

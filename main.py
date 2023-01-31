@@ -36,5 +36,5 @@ async def run_bot(update_method='webhook'):
 
 
 if __name__ == '__main__':
-    asyncio.run(run_bot(update_method='webhook'))
+    asyncio.run(run_bot(update_method=settings.UPDATE_METHOD))
 

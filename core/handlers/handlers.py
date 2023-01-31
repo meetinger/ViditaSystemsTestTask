@@ -14,13 +14,13 @@ from core.handlers.commands import COMMANDS
 from core.handlers.notifications import notificator
 from core.utils.calendar_keyboard import gen_calendar_with_offsets, \
     create_date_selection_handler
-from core.utils.misc import get_utc_datetime_now
+from core.utils.misc import get_utc_datetime_now, get_time_from_datetime
 from db.crud import expenses_cruds
 from db.models import User, Category, Expense
 
 
 class States:
-    CATEGORIES_SELECTION_AWAIT = 1
+    CATEGORIES_ACTION_AWAIT = 1
     DATE_SELECTION_AWAIT = 2
     SHOW_EXPENSES = 3
     EXPENSES_ACTION_AWAIT = 4
@@ -52,7 +52,7 @@ def build_categories_buttons(categories_lst: list[Category]) -> str | InlineKeyb
     if not categories_lst:
         return 'У Вас ещё нет категорий расходов'
     return InlineKeyboardMarkup(
-        [[InlineKeyboardButton(text=category.name, callback_data=str(category.user_id))] for category in
+        [[InlineKeyboardButton(text=category.name, callback_data=f'sel_cat:{category.id}'), InlineKeyboardButton(text='Удалить', callback_data=f'del_cat:{category.id}')] for category in
          categories_lst])
 
 
@@ -78,7 +78,7 @@ async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db
         return ConversationHandler.END
 
     await update.message.reply_text(text='Ваши категории расходов:', reply_markup=reply_data)
-    return States.CATEGORIES_SELECTION_AWAIT
+    return States.CATEGORIES_ACTION_AWAIT
 
 
 @users_cruds.needs_user
@@ -96,16 +96,33 @@ async def set_category(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
 
 
 @users_cruds.needs_user
-async def category_callback_handler(update: Update, context: CallbackContext, user_db: User) -> int:
+async def category_action_handler(update: Update, context: CallbackContext, user_db: User) -> int:
     query = update.callback_query
     await query.answer()
-    category_id = int(query.data)
+
+    action, category_id = query.data.split(':')
+    category_id = int(category_id)
+
+    if action == 'del_cat':
+        categories_cruds.delete_category_by_id(category_id=category_id, user_db=user_db)
+
+        user_categories = user_db.user_categories
+
+        reply_data = build_categories_buttons(user_categories)
+
+        if isinstance(reply_data, str):
+            await update.effective_message.reply_text(reply_data)
+            return ConversationHandler.END
+
+        await update.effective_message.reply_text(text='Ваши категории расходов:', reply_markup=reply_data)
+        return States.CATEGORIES_ACTION_AWAIT
+
     category = categories_cruds.get_category_by_id(category_id=category_id, user_db=user_db)
 
     context.user_data['category'] = category
 
-    start_date = category.creation_date - datetime.timedelta(days=1)
-    end_date = get_utc_datetime_now().date() + datetime.timedelta(days=1)
+    start_date = None
+    end_date = datetime.datetime.now().astimezone().date() + datetime.timedelta(days=1)
 
     context.user_data['calendar_start_date'] = start_date
     context.user_data['calendar_end_date'] = end_date
@@ -218,14 +235,6 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=build_help_str())
 
-
-async def debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    jobs = context.job_queue.jobs()
-    for job in jobs:
-        print(job.name, job.callback)
-        # await job.run(context)
-    await update.message.reply_text(text='Дебаг')
-
 async def cancel(update: Update, context: CallbackContext):
     await update.callback_query.message.reply_text('Команда прервана')
     await update.callback_query.message.edit_reply_markup()
@@ -239,11 +248,11 @@ HANDLERS = [CommandHandler('start', start),
             CommandHandler('enable_notifications', enable_notifications),
             CommandHandler('disable_notifications', disable_notifications),
             CommandHandler('help', help),
-            CommandHandler('debug', debug),
+            CommandHandler('cancel', cancel),
             ConversationHandler(entry_points=[CommandHandler('categories', categories)],
                                 states={
-                                    States.CATEGORIES_SELECTION_AWAIT: [
-                                        CallbackQueryHandler(category_callback_handler)],
+                                    States.CATEGORIES_ACTION_AWAIT: [
+                                        CallbackQueryHandler(category_action_handler)],
                                     States.DATE_SELECTION_AWAIT: [CallbackQueryHandler(
                                         create_date_selection_handler(await_selection_state=States.DATE_SELECTION_AWAIT,
                                                                       selected_callback=show_expenses))],

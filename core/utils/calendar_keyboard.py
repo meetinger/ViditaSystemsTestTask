@@ -117,29 +117,29 @@ def build_calendar_markup(year: int = None, month: int = None, start_day: int = 
     return InlineKeyboardMarkup(keyboard)
 
 
-def gen_calendar_with_offsets(start_date: datetime.date,
-                              end_date: datetime.date, current_date: datetime.date = None, month_offset: int = 0,
+def gen_calendar_with_offsets(start_date: datetime.date = None,
+                              end_date: datetime.date = None, current_date: datetime.date = None, month_offset: int = 0,
                               year_offset: int = 0) -> InlineKeyboardMarkup:
     if current_date is None:
-        current_date = end_date
+        current_date = end_date or start_date or datetime.datetime.now().astimezone().date()
 
     date_with_offset = offset_date(in_date=current_date, month_offset=month_offset,
                                    year_offset=year_offset)
 
-    if not start_date <= date_with_offset <= end_date:
+    if start_date is not None and end_date is not None and not start_date <= date_with_offset <= end_date:
         date_with_offset = current_date
 
     cur_min_day, cur_max_day = 1, calendar.monthrange(year=date_with_offset.year, month=date_with_offset.month)[1]
 
-    prev_month = offset_date(in_date=date_with_offset, month_offset=-1, year_offset=0) > start_date
-    next_month = offset_date(in_date=date_with_offset, month_offset=1, year_offset=0) < end_date
+    prev_month = start_date is None or offset_date(in_date=date_with_offset, month_offset=-1, year_offset=0) >= start_date
+    next_month = end_date is None or offset_date(in_date=date_with_offset, month_offset=1, year_offset=0) <= end_date
 
-    prev_year = offset_date(in_date=date_with_offset, month_offset=0, year_offset=-1) > start_date
-    next_year = offset_date(in_date=date_with_offset, month_offset=0, year_offset=1) > end_date
+    prev_year = start_date is None or offset_date(in_date=date_with_offset, month_offset=0, year_offset=-1) >= start_date
+    next_year = end_date is None or offset_date(in_date=date_with_offset, month_offset=0, year_offset=1) <= end_date
 
-    if date_with_offset.replace(day=1) == start_date.replace(day=1):
+    if start_date is not None and date_with_offset.replace(day=1) == start_date.replace(day=1):
         cur_min_day = start_date.day
-    if date_with_offset.replace(day=1) == end_date.replace(day=1):
+    if end_date is not None and date_with_offset.replace(day=1) == end_date.replace(day=1):
         cur_max_day = end_date.day
 
     return build_calendar_markup(year=date_with_offset.year, month=date_with_offset.month, start_day=cur_min_day,
