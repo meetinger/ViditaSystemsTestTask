@@ -19,12 +19,13 @@ def create_expense(expense_in: dict, category_db: Category, user_db: User,
         return expense_db
 
 
-def delete_expense(expense_id: int, user_db: User) -> bool:
+def delete_expense_by_id(expense_id: int, user_db: User) -> bool:
     with get_db() as db:
         expense_db = db.query(Expense).filter_by(id=expense_id, user_id=user_db.id)
         if expense_db is not None:
             db.delete(expense_db)
             db.commit()
+            db.refresh(user_db)
             return True
         return False
 

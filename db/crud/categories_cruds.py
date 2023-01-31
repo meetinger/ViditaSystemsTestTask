@@ -22,6 +22,7 @@ def delete_category_by_id(category_id: int, user_db: User):
         if category_db is not None:
             db.delete(category_db)
             db.commit()
+            db.refresh(user_db)
             return True
         return False
 

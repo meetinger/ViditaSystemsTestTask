@@ -106,7 +106,7 @@ async def category_action_handler(update: Update, context: CallbackContext, user
     if action == 'del_cat':
         categories_cruds.delete_category_by_id(category_id=category_id, user_db=user_db)
 
-        user_categories = users_cruds.get_user_by_telegram_id(telegram_user_id=user_db.telegram_id).user_categories
+        user_categories = user_db.user_categories
 
         reply_data = build_categories_buttons(user_categories)
 
@@ -152,7 +152,7 @@ async def expenses_action_handler(update: Update, context: CallbackContext, user
     query_data = query.data
     if 'del_exp' in query_data:
         expense_id = int(query_data.split(':')[-1])
-        expenses_cruds.delete_expense(expense_id=expense_id, user_db=user_db)
+        expenses_cruds.delete_expense_by_id(expense_id=expense_id, user_db=user_db)
         await query.message.reply_text('Статья расходов удалена')
         expenses = expenses_cruds.get_category_expenses_by_date(category_db=context.user_data['category'],
                                                                 creation_date=context.user_data['selected_date'],
@@ -236,8 +236,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=build_help_str())
 
 async def cancel(update: Update, context: CallbackContext):
-    await update.callback_query.message.reply_text('Команда прервана')
-    await update.callback_query.message.edit_reply_markup()
+    await update.effective_message.reply_text('Команда прервана')
     return ConversationHandler.END
 
 
