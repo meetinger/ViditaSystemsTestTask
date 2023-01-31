@@ -85,6 +85,7 @@ async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db
 async def set_category(update: Update, context: ContextTypes.DEFAULT_TYPE, user_db: User):
     if not context.args:
         await update.message.reply_text(f'Неверный синтаксис команды\n{COMMANDS["set_category"]}')
+        return
     category_name = " ".join(context.args)
     category_db = categories_cruds.get_category_by_name(category_name=category_name, user_db=user_db)
     if category_db is None:

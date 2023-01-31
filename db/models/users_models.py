@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import Column, Integer, Date
+from sqlalchemy import Column, Integer, Date, BigInteger
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -12,8 +12,8 @@ class User(Base):
     """Класс пользователя"""
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(Integer, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    telegram_id = Column(BigInteger, index=True)
     creation_date = Column(Date)
     utc_offset = Column(Integer, nullable=True)
 
