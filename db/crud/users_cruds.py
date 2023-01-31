@@ -1,9 +1,8 @@
-import datetime
 import functools
+
 import telegram
 from sqlalchemy import and_, Boolean
 from telegram import Update
-from telegram.ext import CallbackContext
 
 from core.handlers.commands import COMMANDS
 from core.utils.misc import get_utc_datetime_now
@@ -33,6 +32,7 @@ def set_user_utc_offset(utc_offset: int, user_db: User) -> User:
         db.refresh(user_db)
         return user_db
 
+
 def update_user_options(options_in: dict, user_db: User) -> User:
     with get_db() as db:
         user_db.options = user_db.options | options_in
@@ -41,10 +41,12 @@ def update_user_options(options_in: dict, user_db: User) -> User:
         db.refresh(user_db)
         return user_db
 
+
 def get_users_for_notifications() -> list:
     with get_db() as db:
         return db.query(User).filter(and_(User.utc_offset != None,
-                                          User.options['notifications_enabled'].astext.cast(Boolean)==True)).all()
+                                          User.options['notifications_enabled'].astext.cast(Boolean) == True)).all()
+
 
 def needs_user(func):
     @functools.wraps(func)

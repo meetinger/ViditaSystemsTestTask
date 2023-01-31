@@ -1,14 +1,13 @@
 import asyncio
 
+from telegram.ext import Application
 
 from core.handlers.handlers import HANDLERS, COMMANDS
 from core.handlers.notifications import notificator
-
 from core.settings import settings
-from telegram.ext import Application
-
 
 application = Application.builder().token(settings.BOT_TOKEN).build()
+
 
 async def run_bot(update_method='webhook'):
     application.add_handlers(HANDLERS)
@@ -37,4 +36,3 @@ async def run_bot(update_method='webhook'):
 
 if __name__ == '__main__':
     asyncio.run(run_bot(update_method=settings.UPDATE_METHOD))
-

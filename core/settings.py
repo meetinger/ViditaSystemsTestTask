@@ -1,11 +1,11 @@
 from os import environ
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 class Settings:
-
     BOT_TOKEN: str = environ['BOT_TOKEN']
     SECRET_TOKEN: str = environ['SECRET_TOKEN']
 

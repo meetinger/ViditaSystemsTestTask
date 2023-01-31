@@ -11,5 +11,5 @@ class Category(Base):
     creation_date = Column(Date)
 
     user_id = Column(BigInteger, ForeignKey('users.id'), index=True)
-    user = relationship('User',lazy='subquery', back_populates='user_categories')
-    expenses = relationship('Expense',lazy='subquery', back_populates='category')
+    user = relationship('User', lazy='subquery', back_populates='user_categories')
+    expenses = relationship('Expense', lazy='subquery', back_populates='category')

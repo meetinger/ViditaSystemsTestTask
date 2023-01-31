@@ -1,5 +1,3 @@
-import datetime
-
 from core.utils.misc import get_utc_datetime_now
 from db.database import get_db
 from db.models import User, Category
@@ -15,6 +13,7 @@ def get_category_by_id(category_id: int, user_db: User) -> Category | None:
     with get_db() as db:
         category_db = db.query(Category).filter_by(id=category_id, user_id=user_db.id).first()
         return category_db
+
 
 def delete_category_by_id(category_id: int, user_db: User):
     with get_db() as db:

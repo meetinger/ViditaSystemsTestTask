@@ -131,10 +131,12 @@ def gen_calendar_with_offsets(start_date: datetime.date = None,
 
     cur_min_day, cur_max_day = 1, calendar.monthrange(year=date_with_offset.year, month=date_with_offset.month)[1]
 
-    prev_month = start_date is None or offset_date(in_date=date_with_offset, month_offset=-1, year_offset=0) >= start_date
+    prev_month = start_date is None or offset_date(in_date=date_with_offset, month_offset=-1,
+                                                   year_offset=0) >= start_date
     next_month = end_date is None or offset_date(in_date=date_with_offset, month_offset=1, year_offset=0) <= end_date
 
-    prev_year = start_date is None or offset_date(in_date=date_with_offset, month_offset=0, year_offset=-1) >= start_date
+    prev_year = start_date is None or offset_date(in_date=date_with_offset, month_offset=0,
+                                                  year_offset=-1) >= start_date
     next_year = end_date is None or offset_date(in_date=date_with_offset, month_offset=0, year_offset=1) <= end_date
 
     if start_date is not None and date_with_offset.replace(day=1) == start_date.replace(day=1):
@@ -212,7 +214,8 @@ async def date_selection_handler(update: Update, context: CallbackContext, await
 
 
 def create_date_selection_handler(await_selection_state: int, selected_state: int = ConversationHandler.END,
-                                  selected_callback: Callable[[Update, CallbackContext], Any] = None) -> Callable[[Update, CallbackContext], Coroutine]:
+                                  selected_callback: Callable[[Update, CallbackContext], Any] = None) -> Callable[
+    [Update, CallbackContext], Coroutine]:
     async def _date_selection_handler(update: Update, context: CallbackContext):
         return await date_selection_handler(update=update, context=context, await_selection_state=await_selection_state,
                                             selected_state=selected_state, selected_callback=selected_callback)

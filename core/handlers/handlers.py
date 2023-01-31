@@ -1,20 +1,17 @@
 import datetime
 import decimal
 from decimal import Decimal
-from pprint import pprint
 
-import db.crud.users_cruds as users_cruds
-import db.crud.categories_cruds as categories_cruds
-
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes, CommandHandler, CallbackContext, ConversationHandler, CallbackQueryHandler, \
     MessageHandler, filters
 
+import db.crud.categories_cruds as categories_cruds
+import db.crud.users_cruds as users_cruds
 from core.handlers.commands import COMMANDS
 from core.handlers.notifications import notificator
 from core.utils.calendar_keyboard import gen_calendar_with_offsets, \
     create_date_selection_handler
-from core.utils.misc import get_utc_datetime_now, get_time_from_datetime
 from db.crud import expenses_cruds
 from db.models import User, Category, Expense
 
@@ -40,8 +37,10 @@ def build_help_str() -> str:
          enumerate(COMMANDS.items(), start=1)])
     return '\n'.join(rows)
 
+
 def build_syntax_help_str(cmd_name: str) -> str:
     return f'{COMMANDS[cmd_name][0]}\nПример использования:\n{COMMANDS[cmd_name][1]}'
+
 
 def build_expenses_reply_data(expenses_lst: list[Expense]) -> dict:
     expenses_text_lst = ['Статьи расходов:']

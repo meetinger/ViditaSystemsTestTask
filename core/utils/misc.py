@@ -43,12 +43,15 @@ def offset_date(in_date: datetime.date, year_offset: int = 0, month_offset: int 
 
     return in_date.replace(year=replace_year, month=replace_month, day=replace_day)
 
+
 def get_server_datetime_by_user(user_datetime: datetime.datetime, user_utc_offset: datetime.timedelta):
     return (user_datetime.astimezone(datetime.timezone.utc).replace(tzinfo=None) + user_utc_offset).astimezone()
+
 
 def get_server_timezone() -> datetime.tzinfo:
     tz = datetime.datetime.now().astimezone()
     return datetime.timezone(tz.utcoffset())
+
 
 def get_time_from_datetime(dt: datetime.datetime):
     return dt.time().replace(tzinfo=dt.tzinfo)

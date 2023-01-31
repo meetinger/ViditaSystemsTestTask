@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from typing import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, scoped_session
@@ -14,6 +13,7 @@ session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 ScopedSession = scoped_session(session_factory)
 
 Base = declarative_base()
+
 
 @contextmanager
 def get_db() -> Session:

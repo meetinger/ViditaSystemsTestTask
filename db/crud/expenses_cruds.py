@@ -1,6 +1,5 @@
 import datetime
 
-
 from core.utils.misc import get_utc_datetime_now
 from db.database import get_db
 from db.models import User, Category, Expense
@@ -31,6 +30,7 @@ def delete_expense_by_id(expense_id: int, user_db: User) -> bool:
 
 def get_all_user_expenses(user_db: User) -> list[Expense]:
     return user_db.user_expenses
+
 
 def get_user_expenses_by_date(expense_date: datetime.date, user_db: User) -> list:
     return user_db.user_expenses.filter_by(creation_date=expense_date).all()
