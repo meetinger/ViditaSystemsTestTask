@@ -7,6 +7,11 @@ load_dotenv()
 
 class Settings:
     BOT_TOKEN: str = environ['BOT_TOKEN']
+    SECRET_TOKEN: str = environ['SECRET_TOKEN']
+
+    UPDATE_METHOD: str = environ['UPDATE_METHOD']
+    WEBHOOK_PORT: int = int(environ['WEBHOOK_PORT'])
+    WEBHOOK_URL: str = environ['WEBHOOK_URL']
 
     # DB Setup
     DB_USER: str = environ['DB_USER']
